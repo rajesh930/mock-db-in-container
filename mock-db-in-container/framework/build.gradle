@@ -1,0 +1,45 @@
+import org.springframework.boot.gradle.plugin.SpringBootPlugin
+
+plugins {
+    id 'java'
+    id 'java-test-fixtures'
+    id 'org.springframework.boot' version '3.4.1' apply false
+    id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'com.ontic'
+version = '1.0'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+dependencyManagement {
+    imports {
+        mavenBom SpringBootPlugin.BOM_COORDINATES
+    }
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-autoconfigure'
+    implementation 'co.elastic.clients:elasticsearch-java'
+    implementation 'com.fasterxml.jackson.core:jackson-databind'
+    implementation 'org.mongodb:mongodb-driver-sync'
+    testFixturesApi "org.junit.jupiter:junit-jupiter"
+    testFixturesApi "org.testcontainers:testcontainers"
+    testFixturesApi "org.testcontainers:junit-jupiter"
+    testFixturesApi "org.springframework.boot:spring-boot-starter-test"
+    testFixturesApi 'org.mockito:mockito-core'
+    testFixturesImplementation "org.testcontainers:mongodb:1.20.5"
+    testFixturesImplementation "org.testcontainers:elasticsearch:1.20.5"
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.compilerArgs.add("-parameters")
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}

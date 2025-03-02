@@ -1,0 +1,4 @@
+rootProject.name = 'mock-db-in-container'
+include 'framework'
+include 'some-module'
+
