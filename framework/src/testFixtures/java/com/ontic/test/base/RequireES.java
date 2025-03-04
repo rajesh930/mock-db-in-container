@@ -22,7 +22,7 @@ public @interface RequireES {
     boolean value() default true;
 
     /**
-     * Required es version
+     * If server should be restarted to clean data
      */
-    String version() default "8.17.2";
+    boolean requiresNew() default false;
 }

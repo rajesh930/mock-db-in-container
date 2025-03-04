@@ -28,6 +28,7 @@ dependencies {
     implementation 'com.fasterxml.jackson.core:jackson-databind'
     implementation 'org.mongodb:mongodb-driver-sync'
     testFixturesApi "org.junit.jupiter:junit-jupiter"
+    testFixturesCompileOnly "org.junit.platform:junit-platform-launcher"
     testFixturesApi "org.testcontainers:testcontainers"
     testFixturesApi "org.testcontainers:junit-jupiter"
     testFixturesApi "org.springframework.boot:spring-boot-starter-test"

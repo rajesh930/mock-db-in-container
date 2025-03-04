@@ -2,76 +2,85 @@ package com.ontic.test.base;
 
 import com.ontic.framework.config.Config;
 import com.ontic.framework.config.ConfigService;
-import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
 import org.mockito.Mockito;
 import org.mockito.stubbing.Answer;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
-import org.testcontainers.containers.MongoDBContainer;
-import org.testcontainers.elasticsearch.ElasticsearchContainer;
+
+import java.lang.annotation.Annotation;
 
 /**
  * @author rajesh
  * @since 27/02/25 13:53
  */
 public abstract class BaseTestFramework {
-
-    private MongoDBContainer mongoDBContainer;
-    private ElasticsearchContainer elasticsearchContainer;
-
     @MockitoSpyBean
     private ConfigService configService;
 
-    @BeforeEach
-    public void setupDBs(TestInfo testInfo) {
+    @BeforeAll
+    public static void setupDBsAtClassLevel(TestInfo testInfo) {
         setupMongoIfRequired(testInfo);
         setupESIfRequired(testInfo);
     }
 
-    @AfterEach
-    public void stopDBs() {
-        if (mongoDBContainer != null) {
-            mongoDBContainer.stop();
-        }
+    @BeforeEach
+    public void setupDBsAtTestMethodLevel(TestInfo testInfo) {
+        setupMongoIfRequired(testInfo);
+        setupESIfRequired(testInfo);
+        mockConfigService(testInfo);
+    }
 
-        if (elasticsearchContainer != null) {
-            elasticsearchContainer.stop();
+    private static void setupMongoIfRequired(TestInfo testInfo) {
+        RequireMongo requireMongo = getApplicableAnnotation(testInfo, RequireMongo.class);
+
+        if (requireMongo != null) {
+            if (requireMongo.requiresNew()) {
+                Fixtures.createNewMongoDB();
+            } else if (requireMongo.value()) {
+                Fixtures.ensureMongoDBRunning();
+            }
         }
     }
 
-    private void setupMongoIfRequired(TestInfo testInfo) {
-        RequireMongo requireMongo = testInfo.getTestMethod().map(m -> m.getAnnotation(RequireMongo.class)).orElse(null);
-        if (requireMongo == null) {
-            requireMongo = this.getClass().getAnnotation(RequireMongo.class);
+    private static void setupESIfRequired(TestInfo testInfo) {
+        RequireES requireES = getApplicableAnnotation(testInfo, RequireES.class);
+
+        if (requireES != null) {
+            if (requireES.requiresNew()) {
+                Fixtures.createNewElasticSearch();
+            } else if (requireES.value()) {
+                Fixtures.ensureElasticSearchRunning();
+            }
         }
+    }
+
+    private static <T extends Annotation> T getApplicableAnnotation(TestInfo testInfo, Class<T> annClass) {
+        T annotation = testInfo.getTestMethod().map(m -> m.getAnnotation(annClass)).orElse(null);
+        if (annotation == null) {
+            annotation = testInfo.getTestClass().map(m -> m.getAnnotation(annClass)).orElse(null);
+        }
+        return annotation;
+    }
+
+    private void mockConfigService(TestInfo testInfo) {
+        RequireMongo requireMongo = getApplicableAnnotation(testInfo, RequireMongo.class);
         if (requireMongo != null && requireMongo.value()) {
-            this.mongoDBContainer = new MongoDBContainer("mongo:" + requireMongo.version());
-            this.mongoDBContainer.start();
             Mockito.doAnswer((Answer<Config>) invocationOnMock -> {
                 Config config = new Config();
                 config.setType("MONGO");
-                config.set("url", mongoDBContainer.getConnectionString());
+                config.set("url", Fixtures.getMongoDB().getConnectionString());
                 return config;
             }).when(configService).getConfig("MONGO");
         }
-    }
 
-    private void setupESIfRequired(TestInfo testInfo) {
-        RequireES requireES = testInfo.getTestMethod().map(m -> m.getAnnotation(RequireES.class)).orElse(null);
-        if (requireES == null) {
-            requireES = this.getClass().getAnnotation(RequireES.class);
-        }
+        RequireES requireES = getApplicableAnnotation(testInfo, RequireES.class);
         if (requireES != null && requireES.value()) {
-            this.elasticsearchContainer = new ElasticsearchContainer(
-                    "docker.elastic.co/elasticsearch/elasticsearch:" + requireES.version())
-                    .withEnv("xpack.security.transport.ssl.enabled", "false")
-                    .withEnv("xpack.security.http.ssl.enabled", "false");
-            this.elasticsearchContainer.start();
             Mockito.doAnswer((Answer<Config>) invocationOnMock -> {
                 Config config = new Config();
                 config.setType("ES");
-                config.set("url", elasticsearchContainer.getHttpHostAddress());
+                config.set("url", Fixtures.getElasticSearch().getHttpHostAddress());
                 config.set("user", "elastic");
                 config.set("password", "changeme");
                 return config;

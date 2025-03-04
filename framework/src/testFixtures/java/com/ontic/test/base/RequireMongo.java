@@ -22,7 +22,7 @@ public @interface RequireMongo {
     boolean value() default true;
 
     /**
-     * Required mongo version
+     * If server should be restarted to clean data
      */
-    String version() default "4.0.10";
+    boolean requiresNew() default false;
 }
