@@ -55,7 +55,8 @@ public class Fixtures {
         elasticsearchContainer = new ElasticsearchContainer(
                 "docker.elastic.co/elasticsearch/elasticsearch:8.17.2")
                 .withEnv("xpack.security.transport.ssl.enabled", "false")
-                .withEnv("xpack.security.http.ssl.enabled", "false");
+                .withEnv("xpack.security.http.ssl.enabled", "false")
+                .withEnv("action.destructive_requires_name", "false");
         elasticsearchContainer.start();
     }
 
@@ -66,7 +67,8 @@ public class Fixtures {
         elasticsearchContainer = new ElasticsearchContainer(
                 "docker.elastic.co/elasticsearch/elasticsearch:8.17.2")
                 .withEnv("xpack.security.transport.ssl.enabled", "false")
-                .withEnv("xpack.security.http.ssl.enabled", "false");
+                .withEnv("xpack.security.http.ssl.enabled", "false")
+                .withEnv("action.destructive_requires_name", "false");
         elasticsearchContainer.start();
     }
 

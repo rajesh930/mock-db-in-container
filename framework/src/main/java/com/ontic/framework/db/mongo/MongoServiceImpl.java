@@ -53,7 +53,7 @@ public class MongoServiceImpl implements MongoService {
             CodecProvider pojoCodecProvider = PojoCodecProvider.builder().automatic(true).build();
             CodecRegistry pojoCodecRegistry = fromRegistries(getDefaultCodecRegistry(), fromProviders(pojoCodecProvider));
             MongoDatabase database = mongoClient.getDatabase(db).withCodecRegistry(pojoCodecRegistry);
-            MongoCollection<T> collection = (MongoCollection<T>) database.getCollection(coll, clazz);
+            MongoCollection<T> collection = database.getCollection(coll, clazz);
             return collection.find(Filters.eq("_id", id)).first();
         }
     }
