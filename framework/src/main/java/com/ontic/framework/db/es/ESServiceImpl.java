@@ -6,6 +6,8 @@ import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
 import com.ontic.framework.config.Config;
 import com.ontic.framework.config.ConfigService;
+import com.ontic.perf.aspect.Track;
+import com.ontic.perf.tracker.Perf;
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
@@ -34,36 +36,46 @@ public class ESServiceImpl implements ESService {
     }
 
     @Override
+    @Track
     public void createIndex(String indexName) {
-        try (RestClientTransport transport = createClient()) {
-            ElasticsearchClient esClient = new ElasticsearchClient(transport);
-            esClient.indices().create(c -> c.index(indexName));
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        try(Perf ignore = Perf.inDB("ES", "A_"+indexName)) {
+            try (RestClientTransport transport = createClient()) {
+                ElasticsearchClient esClient = new ElasticsearchClient(transport);
+                esClient.indices().create(c -> c.index(indexName));
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 
     @Override
+    @Track
     public void index(String index, String id, Object obj) {
-        try (RestClientTransport transport = createClient()) {
-            ElasticsearchClient esClient = new ElasticsearchClient(transport);
-            esClient.index(i -> i.index(index).id(id).document(obj));
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        try(Perf ignore = Perf.inDB("ES", "S_"+index)) {
+            try (RestClientTransport transport = createClient()) {
+                ElasticsearchClient esClient = new ElasticsearchClient(transport);
+                esClient.index(i -> i.index(index).id(id).document(obj));
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 
     @Override
+    @Track
     public <T> T read(String index, String id, Class<T> clazz) {
-        try (RestClientTransport transport = createClient()) {
-            ElasticsearchClient esClient = new ElasticsearchClient(transport);
-            GetResponse<T> response = esClient.get(g -> g.index(index).id(id), clazz);
-            return response.source();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        try(Perf ignore = Perf.inDB("ES", "R_"+index)) {
+            try (RestClientTransport transport = createClient()) {
+                ElasticsearchClient esClient = new ElasticsearchClient(transport);
+                GetResponse<T> response = esClient.get(g -> g.index(index).id(id), clazz);
+                return response.source();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 
+    @Track
     private RestClientTransport createClient() {
         Config es = configService.getConfig("ES");
 

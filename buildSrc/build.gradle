@@ -1,0 +1,14 @@
+plugins {
+    id 'groovy-gradle-plugin'
+}
+
+repositories {
+    gradlePluginPortal()
+}
+
+dependencies {
+    implementation('io.freefair.aspectj.post-compile-weaving:io.freefair.aspectj.post-compile-weaving.gradle.plugin:8.11')
+    implementation('org.sonarqube:org.sonarqube.gradle.plugin:3.0')
+    implementation('org.springframework.boot:org.springframework.boot.gradle.plugin:3.4.1')
+}
+

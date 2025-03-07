@@ -7,6 +7,8 @@ import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Filters;
 import com.ontic.framework.config.Config;
 import com.ontic.framework.config.ConfigService;
+import com.ontic.perf.aspect.Track;
+import com.ontic.perf.tracker.Perf;
 import org.bson.codecs.configuration.CodecProvider;
 import org.bson.codecs.configuration.CodecRegistry;
 import org.bson.codecs.pojo.PojoCodecProvider;
@@ -34,27 +36,33 @@ public class MongoServiceImpl implements MongoService {
     }
 
     @Override
+    @Track
     public <T> String save(String db, String coll, T obj) {
-        Config mongo = configService.getConfig("MONGO");
-        try (MongoClient mongoClient = MongoClients.create((String) mongo.get("url"))) {
-            CodecProvider pojoCodecProvider = PojoCodecProvider.builder().automatic(true).build();
-            CodecRegistry pojoCodecRegistry = fromRegistries(getDefaultCodecRegistry(), fromProviders(pojoCodecProvider));
-            MongoDatabase database = mongoClient.getDatabase(db).withCodecRegistry(pojoCodecRegistry);
-            //noinspection unchecked
-            MongoCollection<T> collection = (MongoCollection<T>) database.getCollection(coll, obj.getClass());
-            return Objects.requireNonNull(collection.insertOne(obj).getInsertedId()).toString();
+        try (Perf ignore = Perf.inDB("MONGO", "S_" + db + "_" + coll)) {
+            Config mongo = configService.getConfig("MONGO");
+            try (MongoClient mongoClient = MongoClients.create((String) mongo.get("url"))) {
+                CodecProvider pojoCodecProvider = PojoCodecProvider.builder().automatic(true).build();
+                CodecRegistry pojoCodecRegistry = fromRegistries(getDefaultCodecRegistry(), fromProviders(pojoCodecProvider));
+                MongoDatabase database = mongoClient.getDatabase(db).withCodecRegistry(pojoCodecRegistry);
+                //noinspection unchecked
+                MongoCollection<T> collection = (MongoCollection<T>) database.getCollection(coll, obj.getClass());
+                return Objects.requireNonNull(collection.insertOne(obj).getInsertedId()).toString();
+            }
         }
     }
 
     @Override
+    @Track
     public <T> T get(String db, String coll, String id, Class<T> clazz) {
-        Config mongo = configService.getConfig("MONGO");
-        try (MongoClient mongoClient = MongoClients.create((String) mongo.get("url"))) {
-            CodecProvider pojoCodecProvider = PojoCodecProvider.builder().automatic(true).build();
-            CodecRegistry pojoCodecRegistry = fromRegistries(getDefaultCodecRegistry(), fromProviders(pojoCodecProvider));
-            MongoDatabase database = mongoClient.getDatabase(db).withCodecRegistry(pojoCodecRegistry);
-            MongoCollection<T> collection = database.getCollection(coll, clazz);
-            return collection.find(Filters.eq("_id", id)).first();
+        try (Perf ignore = Perf.inDB("MONGO", "G_" + db + "_" + coll)) {
+            Config mongo = configService.getConfig("MONGO");
+            try (MongoClient mongoClient = MongoClients.create((String) mongo.get("url"))) {
+                CodecProvider pojoCodecProvider = PojoCodecProvider.builder().automatic(true).build();
+                CodecRegistry pojoCodecRegistry = fromRegistries(getDefaultCodecRegistry(), fromProviders(pojoCodecProvider));
+                MongoDatabase database = mongoClient.getDatabase(db).withCodecRegistry(pojoCodecRegistry);
+                MongoCollection<T> collection = database.getCollection(coll, clazz);
+                return collection.find(Filters.eq("_id", id)).first();
+            }
         }
     }
 }

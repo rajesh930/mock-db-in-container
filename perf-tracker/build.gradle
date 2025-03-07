@@ -1,0 +1,33 @@
+plugins {
+    id 'java'
+    id "io.freefair.aspectj.post-compile-weaving"
+}
+
+group = 'com.ontic'
+version = '1.0'
+
+repositories {
+    mavenCentral()
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+dependencies {
+    implementation 'org.aspectj:aspectjrt:1.9.22.1'
+    implementation 'ch.qos.logback:logback-classic:1.5.16'
+
+    testImplementation platform('org.junit:junit-bom:5.10.0')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+}
+
+test {
+    useJUnitPlatform()
+}
+
+compileTestJava.ajc.options.aspectpath.from sourceSets.main.output

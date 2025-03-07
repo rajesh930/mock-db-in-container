@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ontic.framework.db.es.ESService;
 import com.ontic.framework.db.mongo.MongoService;
 import com.ontic.module.HelloWorldController.HelloResponse;
+import com.ontic.perf.tracker.PerfStats;
 import com.ontic.test.base.BaseTestFramework;
 import com.ontic.test.base.RequireES;
 import com.ontic.test.base.RequireMongo;
@@ -42,14 +43,20 @@ public class ModuleTest extends BaseTestFramework {
 
     @Test
     public void shouldReturnDefaultMessageAndRetRecordedInDb() throws Exception {
-        MvcResult result = this.mockMvc.perform(get("/hello-world").param("name", "World")).andDo(print()).andExpect(status().isOk())
-                .andExpect(content().string(containsString("Hello, World"))).andReturn();
+        PerfStats perf = PerfStats.startNew("shouldReturnDefaultMessageAndRetRecordedInDb");
+        try {
+            MvcResult result = this.mockMvc.perform(get("/hello-world").param("name", "World")).andDo(print()).andExpect(status().isOk())
+                    .andExpect(content().string(containsString("Hello, World"))).andReturn();
 
-        String json = result.getResponse().getContentAsString();
-        HelloResponse response = objectMapper.readValue(json, HelloResponse.class);
-        HelloResponse mongoResponse = mongoService.get("hellodb", "hello", response.getId(), HelloResponse.class);
-        HelloResponse esResponse = esService.read("hello", response.getId(), HelloResponse.class);
-        Assertions.assertEquals(response, mongoResponse);
-        Assertions.assertEquals(response, esResponse);
+            String json = result.getResponse().getContentAsString();
+            HelloResponse response = objectMapper.readValue(json, HelloResponse.class);
+            HelloResponse mongoResponse = mongoService.get("hellodb", "hello", response.getId(), HelloResponse.class);
+            HelloResponse esResponse = esService.read("hello", response.getId(), HelloResponse.class);
+            Assertions.assertEquals(response, mongoResponse);
+            Assertions.assertEquals(response, esResponse);
+        } finally {
+            perf.stop();
+        }
+        System.out.println(perf);
     }
 }
